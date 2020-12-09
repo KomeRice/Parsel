@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="3.18"/>
   <object class="GtkWindow" id="MainWindow">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Example Window</property>
+    <property name="title" translatable="no">Parsel</property>
     <property name="default_width">480</property>
     <property name="default_height">240</property>
     <child>
@@ -16,10 +16,10 @@
         <property name="margin_bottom">4</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="_label1">
+          <object class="GtkLabel" id="_label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Hello World!</property>
+            <property name="label" translatable="no">Choisir un fichier (.txt) pour commencer.</property>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -28,8 +28,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="_button1">
-            <property name="label" translatable="yes">Click me!</property>
+          <object class="GtkButton" id="_pickButton">
+            <property name="label" translatable="no">Parcourir...</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="receives_default">True</property>
@@ -40,6 +40,7 @@
             <property name="position">1</property>
           </packing>
         </child>
+        
       </object>
     </child>
   </object>
