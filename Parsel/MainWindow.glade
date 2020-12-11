@@ -59,7 +59,7 @@
                 <child>
                   <object class="GtkTreeViewColumn" id="_header">
                     <property name="fixed-width">95</property>
-                    <property name="title" translatable="yes">En-Tête</property>
+                    <property name="title" translatable="yes">Info</property>
                     <child>
                       <object class="GtkCellRendererText" id="_headerText"/>
                       <attributes>
@@ -70,7 +70,7 @@
                 </child>
                 <child>
                   <object class="GtkTreeViewColumn" id="_field">
-                    <property name="title" translatable="yes">Champs</property>
+                    <property name="title" translatable="yes">Longueur</property>
                     <child>
                       <object class="GtkCellRendererText" id="_fieldText"/>
                       <attributes>
