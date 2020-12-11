@@ -66,7 +66,7 @@ namespace Parsel
 			{
 				var f = File.ReadAllText(fc.Filename);
 				fc.Dispose();
-				var formattedFile = ParseUtils.Format(f).ToList();
+				var formattedFile = ParseUtils.Format(f);
 				_printTrace.Buffer.Text = string.Join("\n", formattedFile);
 				
 				var packets = ParseUtils.Parse(formattedFile).ToList();
@@ -76,13 +76,6 @@ namespace Parsel
 					var unused = _traceTree.AppendValues (packet.GetField(), "", "");
 				}
 
-				var index = f.IndexOf("AMD", StringComparison.Ordinal);
-				
-				
-				
-				
-				
-				
 			}
 			else
 			{
@@ -98,7 +91,6 @@ namespace Parsel
 
 			if (selection != null && selection.GetSelected(out var model, out var iter))
 			{
-				Console.WriteLine();
 				var selectedItem = _byteRanges.Find(b => b.GetField().Equals(model.GetValue(iter, 0)));
 				Debug.Assert(selectedItem != null, nameof(selectedItem) + " != null");
 				var iterStart = _traceBuffer.GetIterAtOffset(selectedItem.GetRangeStart());
