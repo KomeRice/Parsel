@@ -7,7 +7,7 @@ namespace Parsel
 {
 	public static class ParseUtils
 	{
-		public static IEnumerable<ByteRange> Parse(IEnumerable<string> fData)
+		public static IEnumerable<ByteRange> Parse(IList<string> fData)
 		{
 			var parsedBytes = new List<ByteRange>();
 
@@ -18,19 +18,31 @@ namespace Parsel
 			var packetNumber = 0;
 			var byteList = new List<byte>();
 			
-			foreach(var line in fData)
+			for(var i = 0; i < fData.Count; i++)
 			{
-				if (Convert.ToInt32(line.Split(' ').ToArray()[0],16) == 0 && startPacketIndex != endIndex)
+				var offset = Convert.ToInt32(fData[i].Split(' ').ToArray()[0], 16);
+				if (offset == 0 && startPacketIndex != endIndex)
 				{
-					
 					parsedBytes.Add(new ByteRange($"Packet {packetNumber}", startPacketIndex, endIndex, byteList));
 					packetNumber += 1;
 					startPacketIndex = endIndex;
 					byteList = new List<byte>();
 				}
-				var strBytes = line.Split(' ').ToList();
-				byteList.AddRange(strBytes.GetRange(1, strBytes.Count - 1).Select(b => Convert.ToByte(b, 16))); 
-				endIndex += line.Length;
+				var strBytes = fData[i].Split(' ').ToList();
+				if (!fData[i].Equals(fData.Last()) && Convert.ToInt32(fData[i + 1].Split(' ').ToArray()[0], 16) != 0)
+				{
+					var nextOffset = Convert.ToInt32(fData[i + 1].Split(' ').ToArray()[0], 16);
+					var bytesToAdd = nextOffset - offset;
+					var addBytes = strBytes.GetRange(1, bytesToAdd).Select(b => Convert.ToByte(b, 16)).ToList();
+					byteList.AddRange(addBytes);
+					// Increment by two for newline escape character
+					endIndex += string.Join(' ', strBytes.GetRange(0,bytesToAdd + 1)).Length + 1;
+				}
+				else
+				{
+					byteList.AddRange(strBytes.GetRange(1, strBytes.Count - 1).Select(b => Convert.ToByte(b, 16)));
+					endIndex += fData[i].Length;
+				}
 			}
 			parsedBytes.Add(new ByteRange($"Packet {packetNumber}", startPacketIndex, endIndex, byteList));
 
@@ -70,6 +82,7 @@ namespace Parsel
 				catch (Exception e)
 				{
 					// Line is not formatted as part of trace, ignoring...
+					Console.WriteLine($"Part of file was ignored: {e.Message}");
 				}
 			}
 
