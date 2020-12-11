@@ -20,7 +20,14 @@ namespace Parsel
 		[UI] private TextView _printTrace = null;
 		[UI] private TreeView _displayTrace = null;
 		[UI] private TextBuffer _traceBuffer = null;
-		[UI] private ListStore _traceTree = null;
+		[UI] private TreeStore _traceTree = null;
+		
+		private static readonly TextTag Highlight = new TextTag("Highlight")
+		{
+			Background = "#0000ff",
+			Foreground = "white",
+			Weight = Weight.Bold
+		};
 
 		public MainWindow() : this(new Builder("MainWindow.glade"))
 		{
@@ -29,6 +36,8 @@ namespace Parsel
 		private MainWindow(Builder builder) : base(builder.GetObject("MainWindow").Handle)
 		{
 			builder.Autoconnect(this);
+			
+			_traceBuffer.TagTable.Add(Highlight);
 
 			DeleteEvent += Window_DeleteEvent;
 			_buttonPickFile.Clicked += FileClicked;
@@ -53,23 +62,20 @@ namespace Parsel
 				var f = File.ReadAllText(fc.Filename);
 				fc.Dispose();
 				_printTrace.Buffer.Text = f;
-				var index = f.IndexOf("AMD", StringComparison.Ordinal);
-				TextTag hl = new TextTag("Highlight")
-				{
-					Background = "#0000ff",
-					Foreground = "white",
-					Weight = Weight.Bold
-				};
+				
+				var packets = ParseUtils.Parse(f);
+				foreach(var packet in packets) {
+					var iter = _traceTree.AppendValues (packet.GetField(), packet.GetRangeStart(), packet.GetByteList().Count);
+				}
 
-				_traceBuffer.TagTable.Add(hl);
+				var index = f.IndexOf("AMD", StringComparison.Ordinal);
+				
 				
 				var iter1 = _traceBuffer.GetIterAtOffset(index);
 				var iter2 = _traceBuffer.GetIterAtOffset(index + 3);
 				
-				Application.Invoke(delegate
-				{
-					_traceBuffer.ApplyTag(hl, iter1, iter2);
-				});
+				_traceBuffer.ApplyTag(Highlight, iter1, iter2);
+				
 			}
 			else
 			{
