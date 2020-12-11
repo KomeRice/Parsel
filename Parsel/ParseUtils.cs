@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace Parsel
 {
+
 	public static class ParseUtils
 	{
-		public static IEnumerable<ByteRange> Parse(IList<string> fData)
+		public static IEnumerable<ByteRange> ParseFile(IList<string> fData)
 		{
 			var parsedBytes = new List<ByteRange>();
 
@@ -35,9 +35,46 @@ namespace Parsel
 				endIndex += line.Length + 1;
 			}
 			parsedBytes.Add(new ByteRange($"Packet {packetNumber}", startPacketIndex, endIndex, byteList));
-
 			
 			return parsedBytes;
+		}
+
+		public static ByteRange ParseEthernet(ByteRange packet)
+		{
+			var ethernet = new List<ByteRange>();
+			
+			// Ethernet Parsing
+			
+			// Destination IP
+			var dstIpBytes = packet.GetByteList().GetRange(0, 6);
+			var srcIpBytes = packet.GetByteList().GetRange(6, 6);
+			var typeBytes = packet.GetByteList().GetRange(12, 2);
+			
+			
+			var dstIp = string.Join(':', dstIpBytes.Select(b => b.ToString("X2")));
+			var srcIp = string.Join(':', srcIpBytes.Select(b => b.ToString("X2")));
+			var typeStr = string.Join("", typeBytes.Select(b => b.ToString("X2")));
+			var type = Convert.ToInt32(typeStr, 16) switch
+			{
+				2048 => "IPv4",
+				2054 => "ARP",
+				34525 => "IPv6",
+				_ => "Unsupported"
+			};
+			type += $" (0x{typeStr})";
+			
+			var ethernetLayer = 
+				new ByteRange("Ethernet II", 0,13,packet.GetByteList().GetRange(0,14),
+					$"Src: {srcIp}, Dst: {dstIp}, Type: {type}");
+			var typeRange = new ByteRange($"Type", 12,15, typeBytes, type);
+			var dstIpRange = new ByteRange("Dst IP", 0, 5, dstIpBytes, dstIp);
+			var srcIpRange = new ByteRange("Src IP", 6, 11, srcIpBytes, srcIp);
+			
+			ethernetLayer.AddChild(typeRange);
+			ethernetLayer.AddChild(dstIpRange);
+			ethernetLayer.AddChild(srcIpRange);
+
+			return ethernetLayer;
 		}
 
 		public static IList<string> Format(string data)
