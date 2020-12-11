@@ -5,17 +5,24 @@ namespace Parsel
 	public class ByteRange
 	{
 		private readonly string _fieldName;
+		private readonly string _value;
 		private readonly int _rangeStart, _rangeEnd;
-		private readonly IList<byte> _byteList;
-		private readonly ByteRange _parentHeader;
+		private readonly List<byte> _byteList;
+		private ByteRange _parentHeader;
+		private List<ByteRange> _children = new List<ByteRange>();
 
-		public ByteRange(string fieldName, int start, int end, IList<byte> byteList, ByteRange parent = null)
+		public ByteRange(string fieldName, int start, int end, List<byte> byteList,string value = "")
 		{
 			_fieldName = fieldName;
 			_rangeStart = start;
 			_rangeEnd = end;
 			_byteList = byteList;
-			_parentHeader = parent;
+			_value = value;
+		}
+
+		public string GetValue()
+		{
+			return _value;
 		}
 
 		public int GetRangeStart()
@@ -33,9 +40,25 @@ namespace Parsel
 			return _fieldName;
 		}
 		
-		public IList<byte> GetByteList()
+		public List<byte> GetByteList()
 		{
 			return _byteList;
+		}
+
+		public List<ByteRange> GetChildren()
+		{
+			return _children;
+		}
+
+		private void SetAsChildren(ByteRange parent)
+		{
+			_parentHeader = parent;
+			parent._children.Add(this);
+		}
+
+		public void AddChild(ByteRange child)
+		{
+			child.SetAsChildren(this);
 		}
 	}
 }
