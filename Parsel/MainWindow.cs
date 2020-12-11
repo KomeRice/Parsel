@@ -64,16 +64,21 @@ namespace Parsel
 
 			if (fc.Run() == (int) ResponseType.Accept)
 			{
+				// Read and format file
 				var f = File.ReadAllText(fc.Filename);
 				fc.Dispose();
 				var formattedFile = ParseUtils.Format(f);
 				_printTrace.Buffer.Text = string.Join("\n", formattedFile);
 				
-				var packets = ParseUtils.Parse(formattedFile).ToList();
+				// Split file into packets 
+				var packets = ParseUtils.ParseFile(formattedFile).ToList();
 				_byteRanges.AddRange(packets);
-				
+				// Parse packets and add to tree
 				foreach(var packet in packets) {
-					var unused = _traceTree.AppendValues (packet.GetField(), "", "");
+					var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "");
+					
+					// Parse headers
+					ModelHelper.AddChildren(ParseUtils.ParseEthernet(packet), _traceTree, root, _byteRanges);
 				}
 
 			}
