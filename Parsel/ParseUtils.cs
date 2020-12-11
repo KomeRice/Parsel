@@ -18,31 +18,21 @@ namespace Parsel
 			var packetNumber = 0;
 			var byteList = new List<byte>();
 			
-			for(var i = 0; i < fData.Count; i++)
+			foreach (var line in fData)
 			{
-				var offset = Convert.ToInt32(fData[i].Split(' ').ToArray()[0], 16);
+				var offset = Convert.ToInt32(line.Split(' ').ToArray()[0], 16);
 				if (offset == 0 && startPacketIndex != endIndex)
 				{
 					parsedBytes.Add(new ByteRange($"Packet {packetNumber}", startPacketIndex, endIndex, byteList));
 					packetNumber += 1;
+
 					startPacketIndex = endIndex;
+
 					byteList = new List<byte>();
 				}
-				var strBytes = fData[i].Split(' ').ToList();
-				if (!fData[i].Equals(fData.Last()) && Convert.ToInt32(fData[i + 1].Split(' ').ToArray()[0], 16) != 0)
-				{
-					var nextOffset = Convert.ToInt32(fData[i + 1].Split(' ').ToArray()[0], 16);
-					var bytesToAdd = nextOffset - offset;
-					var addBytes = strBytes.GetRange(1, bytesToAdd).Select(b => Convert.ToByte(b, 16)).ToList();
-					byteList.AddRange(addBytes);
-					// Increment by two for newline escape character
-					endIndex += string.Join(' ', strBytes.GetRange(0,bytesToAdd + 1)).Length + 1;
-				}
-				else
-				{
-					byteList.AddRange(strBytes.GetRange(1, strBytes.Count - 1).Select(b => Convert.ToByte(b, 16)));
-					endIndex += fData[i].Length;
-				}
+				var strBytes = line.Split(' ').ToList();
+				byteList.AddRange(strBytes.GetRange(1, strBytes.Count - 1).Select(b => Convert.ToByte(b, 16))); 
+				endIndex += line.Length + 1;
 			}
 			parsedBytes.Add(new ByteRange($"Packet {packetNumber}", startPacketIndex, endIndex, byteList));
 
@@ -50,48 +40,66 @@ namespace Parsel
 			return parsedBytes;
 		}
 
-		public static IEnumerable<string> Format(string data)
+		public static IList<string> Format(string data)
 		{
-			var lines = data.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.None);
+			// Split text file into a list of lines
+			var lines = data.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.None).ToList();
+			// Result to return
 			var formattedLines = new List<string>();
+			
+			// Remove all lines that are empty or show no byte representation
+			lines.RemoveAll(string.IsNullOrWhiteSpace);
+			lines.RemoveAll(str => str.Split(' ').All(b => !IsByteRepresentation(b)));
 
-			foreach (var line in lines)
+			for(var i = 0; i < lines.Count; i++)
 			{
-				var sList = line.Split(' ').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+				// Split each word, while removing excess whitespaces
+				var sList = lines[i].Split(' ').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
 				try
 				{
-					// Check for offset, first word must be a hex number
-					var cv = Convert.ToInt32(sList[0], 16);
-					if (sList.Any(b => b.Length == 2 && IsHexRepresentation(b)))
+					// Check for offset, first word must be a hex number, throws an exception otherwise
+					var offset = Convert.ToInt32(sList[0], 16);
+					
+					// Number of bytes that must be added
+					// If current line isn't the last one, check next line's offset to find
+					// how many bytes the line is supposed to contain
+					var bytesToAdd = sList.Count(IsByteRepresentation);
+					if (i != lines.Count - 1)
 					{
-						var offset = sList[0];
-						var fLine = new List<string>();
-						foreach (var b in sList.GetRange(1, sList.Count - 1))
+						if (Convert.ToInt32(lines[i + 1].Split(' ').ToArray()[0], 16) != 0)
 						{
-							if(b.Length == 2 && IsHexRepresentation(b)) fLine.Add(b);
-							else
-							{
-								break;
-							}
+							var nextOffset = Convert.ToInt32(lines[i + 1].Split(' ').ToArray()[0], 16);
+							bytesToAdd = nextOffset - offset;
 						}
-						fLine.Insert(0, offset);
-						
-						formattedLines.Add(string.Join(" ", fLine));
 					}
+					
+					// Remove offset from string to see
+					var strOffset = sList[0];
+					var fLine = sList.GetRange(1, bytesToAdd).Where(IsByteRepresentation).ToList();
+					if(fLine.Count != bytesToAdd) 
+						throw new FormatException($"Line {i + 1} of file was malformatted: Expected {bytesToAdd} bytes, got {fLine.Count}");
+
+					fLine.Insert(0, strOffset);
+					formattedLines.Add(string.Join(" ", fLine));
 				}
 				catch (Exception e)
 				{
 					// Line is not formatted as part of trace, ignoring...
-					Console.WriteLine($"Part of file was ignored: {e.Message}");
+					Console.WriteLine($"Part of file was ignored: {e}");
 				}
 			}
 
 			return formattedLines;
 		}
 
-		private static bool IsHexRepresentation(string str)
+		/// <summary>
+		/// Checks if a given string is a representation of a single byte.
+		/// </summary>
+		/// <param name="str"> String to check if readable as a byte </param>
+		/// <returns>true if 2 characters long and made of hexadecimal characters, false otherwise</returns>
+		private static bool IsByteRepresentation(string str)
 		{
-			return System.Text.RegularExpressions.Regex.IsMatch(str, @"\A\b[0-9a-fA-F]+\b\Z");
+			return System.Text.RegularExpressions.Regex.IsMatch(str, @"\A\b[0-9a-fA-F]+\b\Z") && str.Length == 2;
 		}
 	}
 }
