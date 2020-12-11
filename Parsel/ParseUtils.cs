@@ -7,12 +7,10 @@ namespace Parsel
 {
 	public static class ParseUtils
 	{
-		public static IList<ByteRange> Parse(string data)
+		public static IEnumerable<ByteRange> Parse(IEnumerable<string> fData)
 		{
 			var parsedBytes = new List<ByteRange>();
-			
-			var fData = Format(data);
-			
+
 			// Split Packets
 
 			var startPacketIndex = 0;
@@ -40,7 +38,7 @@ namespace Parsel
 			return parsedBytes;
 		}
 
-		private static IEnumerable<string> Format(string data)
+		public static IEnumerable<string> Format(string data)
 		{
 			var lines = data.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.None);
 			var formattedLines = new List<string>();

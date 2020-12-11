@@ -1,7 +1,6 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
-using Gdk;
+using System.Linq;
 using Gtk;
 using Pango;
 using UI = Gtk.Builder.ObjectAttribute;
@@ -61,9 +60,10 @@ namespace Parsel
 			{
 				var f = File.ReadAllText(fc.Filename);
 				fc.Dispose();
-				_printTrace.Buffer.Text = f;
+				var formattedFile = ParseUtils.Format(f).ToList();
+				_printTrace.Buffer.Text = string.Join("\n", formattedFile);
 				
-				var packets = ParseUtils.Parse(f);
+				var packets = ParseUtils.Parse(formattedFile);
 				foreach(var packet in packets) {
 					var iter = _traceTree.AppendValues (packet.GetField(), packet.GetRangeStart(), packet.GetByteList().Count);
 				}
