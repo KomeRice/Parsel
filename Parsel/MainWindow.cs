@@ -75,10 +75,13 @@ namespace Parsel
 				_byteRanges.AddRange(packets);
 				// Parse packets and add to tree
 				foreach(var packet in packets) {
-					var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "");
+					var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "", packet.GetId());
 					
 					// Parse headers
-					ModelHelper.AddChildren(ParseUtils.ParseEthernet(packet), _traceTree, root, _byteRanges);
+					
+					//Ethernet
+					var ethernet = ParseUtils.ParseEthernet(packet, _traceBuffer.Text);
+					ModelHelper.AddChildren(ethernet, _traceTree, root, _byteRanges);
 				}
 
 			}
@@ -96,11 +99,10 @@ namespace Parsel
 
 			if (selection != null && selection.GetSelected(out var model, out var iter))
 			{
-				var selectedItem = _byteRanges.Find(b => b.GetField().Equals(model.GetValue(iter, 0)));
+				var selectedId = Convert.ToInt32(model.GetValue(iter, 3).ToString());
+				var selectedItem = _byteRanges.Find(b => b.GetId() == selectedId);
 				Debug.Assert(selectedItem != null, nameof(selectedItem) + " != null");
-				var iterStart = _traceBuffer.GetIterAtOffset(selectedItem.GetRangeStart());
-				var iterEnd = _traceBuffer.GetIterAtOffset(selectedItem.GetRangeEnd());
-				_traceBuffer.ApplyTag(Highlight, iterStart, iterEnd);
+				ModelHelper.ByteHighlighter(selectedItem.GetRangeStart(), selectedItem.GetByteList().Count, Highlight, _traceBuffer);
 			}
 		}
 	}
