@@ -47,5 +47,16 @@ namespace Parsel
 
 			return nCursor;
 		}
+		
+		public static int ByteShifter(int csr, string data, int shift)
+		{
+			for (var i = 0; i < shift; i++)
+			{
+				csr = CursorSetter(csr, data);
+				csr += 3;
+			}
+
+			return csr;
+		}
 	}
 }
