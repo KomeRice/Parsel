@@ -87,6 +87,7 @@ namespace Parsel
 					var type = ethernet.GetChildren().Find(br => br.GetField() == "Type");
 					if (type == null) return;
 					if (!type.GetValue().Contains("IPv4")) return;
+					
 					// Ip
 					var ip = ParseUtils.ParseIp(packet, _traceBuffer.Text);
 					packet.AddChild(ip);
@@ -94,9 +95,17 @@ namespace Parsel
 					
 					var protocol = ip.GetChildren().Find(br => br.GetField() == "Protocol");
 					if (protocol == null) return;
-					if (!protocol.GetValue().Contains("UDP")) return;
+					if (!protocol.GetValue().Contains("TCP")) return;
+
+					var byteOffsetTcp = ip.GetByteList().Count + ethernet.GetByteList().Count;
+					var startIndexTcp = ip.GetRangeEnd();
 					
-					
+					//Tcp
+
+					var tcp = ParseUtils.ParseTcp(packet, _traceBuffer.Text, byteOffsetTcp, startIndexTcp);
+					packet.AddChild(tcp);
+					ModelHelper.AddChildren(tcp, _traceTree, root, _byteRanges);
+
 				}
 
 			}

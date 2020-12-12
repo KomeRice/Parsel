@@ -163,7 +163,6 @@ namespace Parsel
 				firstByteAsList, $"{headerLength.ToString()} bytes ({Convert.ToInt32(headerBytes, 16)})");
 			ipv4.AddChild(ihlRange);
 
-			
 			var tosRange = new ByteRange("Type of service", ihlRange.GetRangeEnd(), ModelHelper.ByteShifter(ihlRange.GetRangeEnd(), data, 1),
 				tosBytesAsList, $"{ToHexRepresentation(tosBytesAsList)} ({tos})");
 			ipv4.AddChild(tosRange);
@@ -402,6 +401,162 @@ namespace Parsel
 			ipv4.AddChild(optionsRange);
 			
 			return ipv4;
+		}
+
+		public static ByteRange ParseTcp(ByteRange packet, string data, int offset, int startIndex)
+		{
+			// Source Port
+			var srcPortBytes = packet.GetByteList().GetRange(offset, 2);
+			var srcPort = Convert.ToInt32(string.Join("", srcPortBytes.Select(b => b.ToString("X2"))), 16);
+			
+			// Destination Port
+			var dstPortBytes = packet.GetByteList().GetRange(offset + 2, 2);
+			var dstPort = Convert.ToInt32(string.Join("", dstPortBytes.Select(b => b.ToString("X2"))), 16);
+
+			// Sequence Number
+			var seqBytes = packet.GetByteList().GetRange(offset + 4, 4);
+			var seq = Convert.ToInt32(string.Join("", seqBytes.Select(b => b.ToString("X2"))), 16);
+			
+			// Acknowledgement Number
+			var ackBytes = packet.GetByteList().GetRange(offset + 8, 4);
+			var ack = Convert.ToInt32(string.Join("", ackBytes.Select(b => b.ToString("X2"))), 16);
+			
+			var firstByteAsList = new List<byte>() {packet.GetByteList()[offset + 12]};
+			var first = packet.GetByteList()[offset + 12].ToString("X2");
+
+			// Header Length
+			var headerBytes = first.Substring(0,1);
+			var headerLength = Convert.ToInt32(headerBytes, 16) * 4;
+			
+			// Flags
+			var flagBytes = packet.GetByteList().GetRange(offset + 12, 2);
+			var flagsStr = ToHexRepresentation(flagBytes);
+			flagsStr = flagsStr.Substring(3, 3);
+			var frag = Convert.ToString(
+				Convert.ToInt32(flagsStr, 16), 2).PadLeft(16,'0');
+
+			var reserved = Convert.ToInt32(frag.Substring(4,3));
+			var nonce = Convert.ToInt32(frag.Substring(7,1));
+			var cwr = Convert.ToInt32(frag.Substring(8,1));
+			var ecnecho = Convert.ToInt32(frag.Substring(9,1));
+			var urgent = Convert.ToInt32(frag.Substring(10,1));
+			var acknowledgement = Convert.ToInt32(frag.Substring(11,1));
+			var push = Convert.ToInt32(frag.Substring(12,1));
+			var reset = Convert.ToInt32(frag.Substring(13,1));
+			var syn = Convert.ToInt32(frag.Substring(14,1));
+			var fin = Convert.ToInt32(frag.Substring(15,1));
+			
+			// Window
+			var winBytes = packet.GetByteList().GetRange(offset + 14, 2);
+			var window = Convert.ToInt32(string.Join("", winBytes.Select(b => b.ToString("X2"))), 16);
+			
+			// Checksum
+			var checksumBytes = packet.GetByteList().GetRange(offset + 16, 2);
+			var checksum = ToHexRepresentation(checksumBytes);
+			
+			// Urgent
+			var urgentBytes = packet.GetByteList().GetRange(offset + 18, 2);
+			var urgentPointer = Convert.ToInt32(string.Join("", urgentBytes.Select(b => b.ToString("X2"))), 16);
+			
+			// Make ByteRanges
+
+			var cursor = ModelHelper.CursorSetter(startIndex, data);
+			
+			var tcp = new ByteRange("TCP", cursor, ModelHelper.ByteShifter(cursor, data, headerLength), 
+				packet.GetByteList().GetRange(startIndex,headerLength), $"Src Port: {srcPort} Dst Port: {dstPort}, Seq: {seq}, Ack: {ack}");
+			
+			var srcPortRange = new ByteRange("Source Port", cursor, ModelHelper.ByteShifter(cursor, data, 2), 
+				srcPortBytes, srcPort.ToString());
+			tcp.AddChild(srcPortRange);
+			
+			var dstPortRange = new ByteRange("Destination Port", srcPortRange.GetRangeEnd(), 
+				ModelHelper.ByteShifter(srcPortRange.GetRangeEnd(), data, 2), dstPortBytes, dstPort.ToString());
+			tcp.AddChild(dstPortRange);
+			
+			var seqRange = new ByteRange("Sequence Number", dstPortRange.GetRangeEnd(), 
+				ModelHelper.ByteShifter(dstPortRange.GetRangeEnd(), data, 4), seqBytes, seq.ToString());
+			tcp.AddChild(seqRange);
+			
+			var ackRange = new ByteRange("Acknowledgment Number", seqRange.GetRangeEnd(), 
+				ModelHelper.ByteShifter(seqRange.GetRangeEnd(), data, 4), ackBytes, ack.ToString());
+			tcp.AddChild(ackRange);
+			
+			var ihlRange = new ByteRange("Header Length", ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 1),
+				firstByteAsList, $"{headerLength.ToString()} bytes ({Convert.ToInt32(headerBytes, 16)})");
+			tcp.AddChild(ihlRange);
+			
+			var flags = new ByteRange("Flags: ",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"0x{flagsStr}");
+			tcp.AddChild(flags);
+
+			var reservedFlagRange = new ByteRange($"000. .... ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Reserved Bit: Not set");
+			flags.AddChild(reservedFlagRange);
+
+			var nonceRange = new ByteRange($"...{nonce} .... ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Nonce: {(nonce == 1 ? "Set" : "Not set")}");
+			flags.AddChild(nonceRange);
+
+			var cwrRange = new ByteRange($".... {cwr}... ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Congestion Window Reduced: {(cwr == 1 ? "Set" : "Not set")}");
+			flags.AddChild(cwrRange);
+
+			var ecnechoRange = new ByteRange($".... .{ecnecho}.. ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"ECN-Echo: {(ecnecho == 1 ? "Set" : "Not set")}");
+			flags.AddChild(ecnechoRange);
+
+			var urgentRange = new ByteRange($".... ..{urgent}. ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Urgent: {(urgent == 1 ? "Set" : "Not set")}");
+			flags.AddChild(urgentRange);
+
+			var ackFlagRange = new ByteRange($".... ...{acknowledgement} ....",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Acknowledgment: {(acknowledgement == 1 ? "Set" : "Not set")}");
+			flags.AddChild(ackFlagRange);
+			
+			var pushRange = new ByteRange($".... .... {push}...",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Push: {(push == 1 ? "Set" : "Not set")}");
+			flags.AddChild(pushRange);
+
+			var resetRange = new ByteRange($".... .... .{reset}..",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Reset: {(reset == 1 ? "Set" : "Not set")}");
+			flags.AddChild(resetRange);
+
+			var synRange = new ByteRange($".... .... ..{syn}. ",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Syn: {(syn == 1 ? "Set" : "Not set")}");
+			flags.AddChild(synRange);
+
+			var finRange = new ByteRange($".... .... ...{fin}",
+				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
+				flagBytes, $"Fin: {(fin == 1 ? "Set" : "Not set")}");
+			flags.AddChild(finRange);
+			
+			var winRange = new ByteRange("Window Size Value", flags.GetRangeEnd(), ModelHelper.ByteShifter(flags.GetRangeEnd(), data, 2),
+				winBytes, $"{ToHexRepresentation(winBytes)} ({window})");
+			tcp.AddChild(winRange);
+			
+			var checksumRange = new ByteRange("Checksum",
+				winRange.GetRangeEnd(), ModelHelper.ByteShifter(winRange.GetRangeEnd(), data, 2),
+				checksumBytes, checksum);
+			tcp.AddChild(checksumRange);
+			
+			var urgpoRange = new ByteRange("Urgent Pointer", checksumRange.GetRangeEnd(), ModelHelper.ByteShifter(checksumRange.GetRangeEnd(), data, 2),
+				urgentBytes, $"{ToHexRepresentation(urgentBytes)} ({urgentPointer})");
+			tcp.AddChild(urgpoRange);
+
+			
+			// Options
+
+			return tcp;
 		}
 
 		public static IList<string> Format(string data)
