@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GLib;
 
 namespace Parsel
 {
@@ -70,7 +69,7 @@ namespace Parsel
 				ModelHelper.ByteShifter(cursor, data, 6), dstMacBytes, dstMac);
 			var srcIpRange = new ByteRange("Src MAC", dstIpRange.GetRangeEnd(), 
 				ModelHelper.ByteShifter(dstIpRange.GetRangeEnd(), data, 6), srcLacBytes, srcMac);
-			var typeRange = new ByteRange($"Type", dstIpRange.GetRangeEnd() + 18,
+			var typeRange = new ByteRange("Type", dstIpRange.GetRangeEnd() + 18,
 				ModelHelper.ByteShifter(srcIpRange.GetRangeEnd(), data, 2), typeBytes, type);
 			
 			ethernetLayer.AddChild(typeRange);
@@ -107,8 +106,11 @@ namespace Parsel
 			
 			// Fragmentation
 			var fragBytes = packet.GetByteList().GetRange(20, 2);
-			var frag = ToBinaryWord(Convert.ToInt32(string.Join("", fragBytes.Select(b => b.ToString("X2")))),16);
 			var flagsStr = ToHexRepresentation(fragBytes);
+			var frag = Convert.ToString(
+				Convert.ToInt32(
+					flagsStr.Substring(2,4), 16), 2).PadLeft(16,'0');
+			
 			
 			// Flags
 			var fragFlags = frag.Substring(0, 3);
@@ -361,7 +363,7 @@ namespace Parsel
 
 						// Type ByteRange
 						var oTypeRange = new ByteRange("Type", rangeStart, 
-							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType}");
+							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType})");
 
 						// Length ByteRange
 						var oLengthRange = new ByteRange("Length", oTypeRange.GetRangeEnd(), 
@@ -463,12 +465,7 @@ namespace Parsel
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(str, @"\A\b[0-9a-fA-F]+\b\Z") && str.Length == 2;
 		}
-		
-		public static string ToBinaryWord(int value, int len) {
-			return (len > 1 ? ToBinaryWord(value >> 1, len - 1) : null) + "01"[value & 1];
-		}
-
-		public static string ToHexRepresentation(List<byte> bytes)
+		private static string ToHexRepresentation(List<byte> bytes)
 		{
 			return "0x" + string.Join("", bytes.Select(b => b.ToString("X2")));
 		}

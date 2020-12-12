@@ -83,11 +83,20 @@ namespace Parsel
 					var ethernet = ParseUtils.ParseEthernet(packet, _traceBuffer.Text);
 					packet.AddChild(ethernet);
 					ModelHelper.AddChildren(ethernet, _traceTree, root, _byteRanges);
-					
+
+					var type = ethernet.GetChildren().Find(br => br.GetField() == "Type");
+					if (type == null) return;
+					if (!type.GetValue().Contains("IPv4")) return;
 					// Ip
 					var ip = ParseUtils.ParseIp(packet, _traceBuffer.Text);
 					packet.AddChild(ip);
 					ModelHelper.AddChildren(ip, _traceTree, root, _byteRanges);
+					
+					var protocol = ip.GetChildren().Find(br => br.GetField() == "Protocol");
+					if (protocol == null) return;
+					if (!protocol.GetValue().Contains("UDP")) return;
+					
+					
 				}
 
 			}
