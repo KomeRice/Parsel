@@ -83,8 +83,6 @@ namespace Parsel
 
 		public static ByteRange ParseIp(ByteRange packet, string data)
 		{
-			// ModelHelper.CursorSetter(packet.GetRangeStart(), data) + 48
-			
 			// Version
 			var firstByteAsList = new List<byte>() {packet.GetByteList()[14]};
 			var first = packet.GetByteList()[14].ToString("X2");
