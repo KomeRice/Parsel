@@ -21,7 +21,6 @@ namespace Parsel
 		public static void ByteHighlighter(int firstIndex, int nbBytesToHighlight, TextTag highlight, TextBuffer buffer)
 		{
 			var csr = firstIndex;
-			var str = buffer.Text.Substring(csr, buffer.Text.Length - csr);
 
 			for(var toHighlight = nbBytesToHighlight; toHighlight != 0; toHighlight--)
 			{
