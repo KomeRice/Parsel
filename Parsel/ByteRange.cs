@@ -4,6 +4,8 @@ namespace Parsel
 {
 	public class ByteRange
 	{
+		private static int Count = 0;
+		private readonly int _id;
 		private readonly string _fieldName;
 		private readonly string _value;
 		private readonly int _rangeStart, _rangeEnd;
@@ -13,6 +15,8 @@ namespace Parsel
 
 		public ByteRange(string fieldName, int start, int end, List<byte> byteList,string value = "")
 		{
+			_id = Count;
+			++Count;
 			_fieldName = fieldName;
 			_rangeStart = start;
 			_rangeEnd = end;
@@ -59,6 +63,11 @@ namespace Parsel
 		public void AddChild(ByteRange child)
 		{
 			child.SetAsChildren(this);
+		}
+
+		public int GetId()
+		{
+			return _id;
 		}
 	}
 }
