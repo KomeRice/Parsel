@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GLib;
 
 namespace Parsel
 {
@@ -94,6 +95,7 @@ namespace Parsel
 			
 			// Type of service
 			var tos = packet.GetByteList()[15].ToString("X2");
+			var tosBytesAsList = new List<byte> {packet.GetByteList()[15]};
 			
 			// Total Length
 			var tLengthBytes = packet.GetByteList().GetRange(16, 2);
@@ -106,8 +108,7 @@ namespace Parsel
 			// Fragmentation
 			var fragBytes = packet.GetByteList().GetRange(20, 2);
 			var frag = ToBinaryWord(Convert.ToInt32(string.Join("", fragBytes.Select(b => b.ToString("X2")))),16);
-			var flagsStr = "0x" + string.Join("", fragBytes.Select(b => b.ToString("X2")));
-
+			var flagsStr = ToHexRepresentation(fragBytes);
 			
 			// Flags
 			var fragFlags = frag.Substring(0, 3);
@@ -135,7 +136,7 @@ namespace Parsel
 			
 			// Checksum
 			var checksumBytes = packet.GetByteList().GetRange(24, 2);
-			var checksum = "0x" + string.Join("", checksumBytes.Select(b => b.ToString("X2")));
+			var checksum = ToHexRepresentation(checksumBytes);
 			
 			// Source Ip
 			var srcIpBytes = packet.GetByteList().GetRange(26, 4);
@@ -157,21 +158,22 @@ namespace Parsel
 			ipv4.AddChild(versionRange);
 			
 			var ihlRange = new ByteRange("Header Length", cursor, ModelHelper.ByteShifter(cursor, data, 1),
-				firstByteAsList, $"Header Length: {headerLength.ToString()}");
+				firstByteAsList, $"{headerLength.ToString()} bytes ({Convert.ToInt32(headerBytes, 16)})");
 			ipv4.AddChild(ihlRange);
 
+			
 			var tosRange = new ByteRange("Type of service", ihlRange.GetRangeEnd(), ModelHelper.ByteShifter(ihlRange.GetRangeEnd(), data, 1),
-				new List<byte>() {packet.GetByteList()[15]}, $"Type of service: {tos}");
+				tosBytesAsList, $"{ToHexRepresentation(tosBytesAsList)} ({tos})");
 			ipv4.AddChild(tosRange);
 
 			var totalLengthRange = new ByteRange("Total Length", 
 				tosRange.GetRangeEnd(), ModelHelper.ByteShifter(tosRange.GetRangeEnd(), data, 2),
-				tLengthBytes,$"Total Length: {totalLength} bytes");
+				tLengthBytes,$"{ToHexRepresentation(tLengthBytes)} ({totalLength} bytes)");
 			ipv4.AddChild(totalLengthRange);
 
 			var identificationRange = new ByteRange("Identification",
 				totalLengthRange.GetRangeEnd(), ModelHelper.ByteShifter(totalLengthRange.GetRangeEnd(), data, 2),
-				identificationBytes, $"Identification: {identification}");
+				identificationBytes, $"{identification}");
 			ipv4.AddChild(identificationRange);
 
 			var flags = new ByteRange("Flags: ",
@@ -202,12 +204,12 @@ namespace Parsel
 
 			var ttlRange = new ByteRange("Time to live",
 				fragOffRange.GetRangeEnd(), ModelHelper.ByteShifter(fragOffRange.GetRangeEnd(), data, 1),
-				ttlByte, ttl.ToString());
+				ttlByte, $"{ToHexRepresentation(ttlByte)} ({ttl.ToString()})");
 			ipv4.AddChild(ttlRange);
 
 			var protocolRange = new ByteRange("Protocol",
 				ttlRange.GetRangeEnd(), ModelHelper.ByteShifter(ttlRange.GetRangeEnd(), data, 1),
-				protocolBytes, $"{protocol} ({protocolStr})");
+				protocolBytes, $"{protocol} ({ToHexRepresentation(protocolBytes)}/{protocolStr})");
 			ipv4.AddChild(protocolRange);
 
 			var headerChecksumRange = new ByteRange("Header checksum",
@@ -224,6 +226,178 @@ namespace Parsel
 				srcIpRange.GetRangeEnd(), ModelHelper.ByteShifter(srcIpRange.GetRangeEnd(), data, 4),
 				dstIpBytes, dstIp);
 			ipv4.AddChild(dstIpRange);
+			
+			const int treatedBytes = 20;
+
+			if(headerLength < 20) throw new FormatException($"IP header must be at least 20 bytes, got {headerLength}");
+			if (headerLength == treatedBytes) return ipv4;
+			
+			// Options Range
+			
+			var optionsLength = headerLength - 20;
+
+			var optionsRange = new ByteRange("IP Options", dstIpRange.GetRangeEnd(),
+				ModelHelper.ByteShifter(dstIpRange.GetRangeEnd(), data, optionsLength), packet.GetByteList().GetRange(34, optionsLength));
+			
+			// Increment this whenever a byte is treated within option parsing
+			var treatedOptionBytes = 0;
+			
+			// Last Index treated for string cursor
+			var lastIndex = dstIpRange.GetRangeEnd();
+
+			while (headerLength > treatedBytes + treatedOptionBytes)
+			{
+				// Get byte containing type of option
+				var optionTypeByte = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+				treatedOptionBytes++;
+
+				// Get option type as int
+				var optionType = Convert.ToInt32(optionTypeByte[0]);
+
+				// Set start of index as last shifted index
+				var rangeStart = lastIndex;
+				
+				// End of options list reached
+				if (optionType == 0)
+				{
+					var endOptionsRange = new ByteRange("End of Options List", rangeStart, lastIndex, optionTypeByte);
+					endOptionsRange.AddChild(new ByteRange("Type", rangeStart, lastIndex, optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType}"));
+					optionsRange.AddChild(endOptionsRange);
+					break;
+				}
+				
+				var optionStart = treatedOptionBytes + 33;
+				switch (optionType)
+				{
+					case 1:
+						// Shift end of index to end of option
+						lastIndex = ModelHelper.ByteShifter(lastIndex, data, 1);
+
+						var noOpRange = new ByteRange("No Operation", rangeStart, lastIndex, optionTypeByte);
+						noOpRange.AddChild(new ByteRange("Type", rangeStart, lastIndex, optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType})"));
+						optionsRange.AddChild(noOpRange);
+						break;
+					case 68:
+						// Length
+						var tsLengthBytes = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+						treatedOptionBytes++;
+						var tsLength = Convert.ToInt32(tsLengthBytes[0].ToString("X2"), 16);
+						lastIndex = ModelHelper.ByteShifter(lastIndex, data, tsLength);
+						
+						var tsRange = new ByteRange("Time Stamp", rangeStart, lastIndex, 
+							packet.GetByteList().GetRange(optionStart, tsLength),
+							"No further details processed");
+						tsRange.AddChild(new ByteRange("Type", rangeStart, lastIndex, optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType})"));
+						
+						treatedOptionBytes += tsLength - 2;
+						optionsRange.AddChild(tsRange);
+						break;
+					
+					case 131:
+						// Length
+						var lrLengthBytes = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+						treatedOptionBytes++;
+						var lrLength = Convert.ToInt32(lrLengthBytes[0].ToString("X2"), 16);
+						lastIndex = ModelHelper.ByteShifter(lastIndex, data, lrLength);
+						
+						var lrRange = new ByteRange("Loose Routing", rangeStart, lastIndex, 
+							packet.GetByteList().GetRange(optionStart, lrLength),
+							"No further details processed");
+						lrRange.AddChild(new ByteRange("Type", rangeStart, lastIndex, optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType})"));
+						
+						treatedOptionBytes += lrLength - 2;
+						optionsRange.AddChild(lrRange);
+						break;
+					
+					case 137:
+						// Length
+						var srLengthBytes = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+						treatedOptionBytes++;
+						var srLength = Convert.ToInt32(srLengthBytes[0].ToString("X2"), 16);
+						lastIndex = ModelHelper.ByteShifter(lastIndex, data, srLength);
+						
+						var srRange = new ByteRange("Strict Routing", rangeStart, lastIndex, 
+							packet.GetByteList().GetRange(optionStart, srLength),
+							"No further details processed");
+						srRange.AddChild(new ByteRange("Type", rangeStart, lastIndex, optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType})"));
+						
+						treatedOptionBytes += srLength - 2;
+						optionsRange.AddChild(srRange);
+						break;
+
+					case 7:
+						// 33 instead of 34 to account for the treated Type byte
+						
+						// Length
+						var rcRouteLengthByte = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+						treatedOptionBytes++;
+						var rcRouteLength = Convert.ToInt32(rcRouteLengthByte[0].ToString("X2"), 16);
+						
+						var optionEnd = optionStart + rcRouteLength;
+
+						// Pointer
+						var rcRoutePointerByte = packet.GetByteList().GetRange(34 + treatedOptionBytes, 1);
+						treatedOptionBytes++;
+						var rcRoutePointer = Convert.ToInt32(rcRoutePointerByte[0].ToString("X2"), 16);
+						
+						var ipList = new List<string>();
+						var firstIpByte = 34 + treatedOptionBytes;
+						
+						// IP List
+						while (34 + treatedOptionBytes < optionEnd)
+						{
+							var recordRouteIpBytes = packet.GetByteList().GetRange(34 + treatedOptionBytes, 4);
+							ipList.Add(string.Join('.', recordRouteIpBytes.Select(b => b.ToString())));
+							treatedOptionBytes += 4;
+						}
+						
+						// Build ByteRange
+
+						// Parent ByteRange
+						lastIndex = ModelHelper.ByteShifter(lastIndex, data, rcRouteLength);
+						var rcRouteRange = new ByteRange("Record Route", rangeStart, lastIndex, 
+							packet.GetByteList().GetRange(optionStart, rcRouteLength), $"Record Route ({rcRouteLength} bytes)");
+						
+
+						// Type ByteRange
+						var oTypeRange = new ByteRange("Type", rangeStart, 
+							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte, $"{ToHexRepresentation(optionTypeByte)} ({optionType}");
+
+						// Length ByteRange
+						var oLengthRange = new ByteRange("Length", oTypeRange.GetRangeEnd(), 
+							ModelHelper.ByteShifter(oTypeRange.GetRangeEnd(), data, 1), rcRouteLengthByte, rcRouteLength.ToString());
+
+						// Pointer ByteRange
+						var oPointerRange = new ByteRange("Pointer", oLengthRange.GetRangeEnd(), 
+							ModelHelper.ByteShifter(oLengthRange.GetRangeEnd(), data, 1), rcRoutePointerByte, rcRoutePointer.ToString());
+						
+						// Add option parameters to parent
+						rcRouteRange.AddChild(oTypeRange);
+						rcRouteRange.AddChild(oLengthRange);
+						rcRouteRange.AddChild(oPointerRange);
+
+						rangeStart = oPointerRange.GetRangeEnd();
+						foreach (var ip in ipList)
+						{
+							lastIndex = ModelHelper.ByteShifter(rangeStart, data, 4);
+							rcRouteRange.AddChild(new ByteRange("Recorded Route", rangeStart, lastIndex,
+								packet.GetByteList().GetRange(firstIpByte, 4), ip));
+							rangeStart = lastIndex;
+							firstIpByte += 4;
+						}
+						
+						optionsRange.AddChild(rcRouteRange);
+						break;
+				}
+			}
+
+			if (headerLength != treatedBytes + treatedOptionBytes)
+			{
+				throw new FormatException(
+					$"Header length ({headerLength}) did not coincide with End of Options List (Found at byte {treatedBytes + treatedOptionBytes}).");
+			}
+			
+			ipv4.AddChild(optionsRange);
 			
 			return ipv4;
 		}
@@ -292,6 +466,11 @@ namespace Parsel
 		
 		public static string ToBinaryWord(int value, int len) {
 			return (len > 1 ? ToBinaryWord(value >> 1, len - 1) : null) + "01"[value & 1];
+		}
+
+		public static string ToHexRepresentation(List<byte> bytes)
+		{
+			return "0x" + string.Join("", bytes.Select(b => b.ToString("X2")));
 		}
 	}
 }
