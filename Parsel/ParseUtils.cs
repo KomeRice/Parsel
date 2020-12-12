@@ -291,5 +291,9 @@ namespace Parsel
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(str, @"\A\b[0-9a-fA-F]+\b\Z") && str.Length == 2;
 		}
+		
+		public static string ToBinaryWord(int value, int len) {
+			return (len > 1 ? ToBinaryWord(value >> 1, len - 1) : null) + "01"[value & 1];
+		}
 	}
 }
