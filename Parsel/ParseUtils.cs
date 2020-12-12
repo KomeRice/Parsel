@@ -59,16 +59,18 @@ namespace Parsel
 				_ => "Unsupported"
 			};
 			type += $" (0x{typeStr})";
+
+			var cursor = ModelHelper.CursorSetter(packet.GetRangeStart(), data);
 			
 			var ethernetLayer = 
-				new ByteRange("Ethernet II", ModelHelper.CursorSetter(packet.GetRangeStart(), data),ModelHelper.CursorSetter(packet.GetRangeStart(), data) + 42,packet.GetByteList().GetRange(0,14),
-					$"Src: {srcIp}, Dst: {dstIp}, Type: {type}");
-			var dstIpRange = new ByteRange("Dst IP", ModelHelper.CursorSetter(packet.GetRangeStart(), data), 
-				ModelHelper.CursorSetter(packet.GetRangeStart(), data) + 18, dstIpBytes, dstIp);
-			var srcIpRange = new ByteRange("Src IP", dstIpRange.GetRangeEnd(), 
-				ModelHelper.CursorSetter(dstIpRange.GetRangeEnd(), data) + 18, srcIpBytes, srcIp);
+				new ByteRange("Ethernet II", cursor,ModelHelper.ByteShifter(cursor, data, 14),packet.GetByteList().GetRange(0,14),
+					$"Src: {srcMac}, Dst: {dstMac}, Type: {type}");
+			var dstIpRange = new ByteRange("Dst MAC", cursor, 
+				ModelHelper.ByteShifter(cursor, data, 6), dstMacBytes, dstMac);
+			var srcIpRange = new ByteRange("Src MAC", dstIpRange.GetRangeEnd(), 
+				ModelHelper.ByteShifter(dstIpRange.GetRangeEnd(), data, 6), srcLacBytes, srcMac);
 			var typeRange = new ByteRange($"Type", dstIpRange.GetRangeEnd() + 18,
-				ModelHelper.CursorSetter(dstIpRange.GetRangeEnd(), data) + 6, typeBytes, type);
+				ModelHelper.ByteShifter(srcIpRange.GetRangeEnd(), data, 2), typeBytes, type);
 			
 			ethernetLayer.AddChild(typeRange);
 			ethernetLayer.AddChild(dstIpRange);
