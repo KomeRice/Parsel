@@ -60,10 +60,13 @@
                 </child>
                 <child>
                   <object class="GtkTreeViewColumn" id="_header">
-                    <property name="fixed-width">140</property>
+                    <property name="fixed-width">160</property>
                     <property name="title" translatable="yes">Info</property>
                     <child>
-                      <object class="GtkCellRendererText" id="_headerText"/>
+                      <object class="GtkCellRendererText" id="_headerText">
+                        <property name="wrap-mode">word</property>
+                        <property name="wrap-width">160</property>
+                      </object>
                       <attributes>
                         <attribute name="text">0</attribute>
                       </attributes>
@@ -86,7 +89,10 @@
                     <property name="fixed-width">280</property>
                     <property name="title" translatable="yes">Valeur</property>
                     <child>
-                      <object class="GtkCellRendererText" id="_valueText"/>
+                      <object class="GtkCellRendererText" id="_valueText">
+                        <property name="wrap-mode">word</property>
+                        <property name="wrap-width">280</property>
+                      </object>
                       <attributes>
                         <attribute name="text">2</attribute>
                       </attributes>
