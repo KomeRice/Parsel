@@ -39,7 +39,7 @@ namespace Parsel
 			return parsedBytes;
 		}
 
-		public static ByteRange ParseEthernet(ByteRange packet)
+		public static ByteRange ParseEthernet(ByteRange packet, string data)
 		{
 			var ethernet = new List<ByteRange>();
 			
@@ -64,11 +64,14 @@ namespace Parsel
 			type += $" (0x{typeStr})";
 			
 			var ethernetLayer = 
-				new ByteRange("Ethernet II", 0,13,packet.GetByteList().GetRange(0,14),
+				new ByteRange("Ethernet II", ModelHelper.CursorSetter(packet.GetRangeStart(), data),ModelHelper.CursorSetter(packet.GetRangeStart(), data) + 42,packet.GetByteList().GetRange(0,14),
 					$"Src: {srcIp}, Dst: {dstIp}, Type: {type}");
-			var typeRange = new ByteRange($"Type", 12,15, typeBytes, type);
-			var dstIpRange = new ByteRange("Dst IP", 0, 5, dstIpBytes, dstIp);
-			var srcIpRange = new ByteRange("Src IP", 6, 11, srcIpBytes, srcIp);
+			var dstIpRange = new ByteRange("Dst IP", ModelHelper.CursorSetter(packet.GetRangeStart(), data), 
+				ModelHelper.CursorSetter(packet.GetRangeStart(), data) + 18, dstIpBytes, dstIp);
+			var srcIpRange = new ByteRange("Src IP", dstIpRange.GetRangeEnd(), 
+				ModelHelper.CursorSetter(dstIpRange.GetRangeEnd(), data) + 18, srcIpBytes, srcIp);
+			var typeRange = new ByteRange($"Type", dstIpRange.GetRangeEnd() + 18,
+				ModelHelper.CursorSetter(dstIpRange.GetRangeEnd(), data) + 6, typeBytes, type);
 			
 			ethernetLayer.AddChild(typeRange);
 			ethernetLayer.AddChild(dstIpRange);
