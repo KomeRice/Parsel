@@ -79,9 +79,15 @@ namespace Parsel
 					
 					// Parse headers
 					
-					//Ethernet
+					// Ethernet
 					var ethernet = ParseUtils.ParseEthernet(packet, _traceBuffer.Text);
+					packet.AddChild(ethernet);
 					ModelHelper.AddChildren(ethernet, _traceTree, root, _byteRanges);
+					
+					// Ip
+					var ip = ParseUtils.ParseIp(packet, _traceBuffer.Text);
+					packet.AddChild(ip);
+					ModelHelper.AddChildren(ip, _traceTree, root, _byteRanges);
 				}
 
 			}
