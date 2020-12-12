@@ -41,18 +41,15 @@ namespace Parsel
 
 		public static ByteRange ParseEthernet(ByteRange packet, string data)
 		{
-			var ethernet = new List<ByteRange>();
-			
-			// Ethernet Parsing
-			
-			// Destination IP
-			var dstIpBytes = packet.GetByteList().GetRange(0, 6);
-			var srcIpBytes = packet.GetByteList().GetRange(6, 6);
+			// Destination MAC
+			var dstMacBytes = packet.GetByteList().GetRange(0, 6);
+			// Source MAC
+			var srcLacBytes = packet.GetByteList().GetRange(6, 6);
+			// Type
 			var typeBytes = packet.GetByteList().GetRange(12, 2);
 			
-			
-			var dstIp = string.Join(':', dstIpBytes.Select(b => b.ToString("X2")));
-			var srcIp = string.Join(':', srcIpBytes.Select(b => b.ToString("X2")));
+			var dstMac = string.Join(':', dstMacBytes.Select(b => b.ToString("X2")));
+			var srcMac = string.Join(':', srcLacBytes.Select(b => b.ToString("X2")));
 			var typeStr = string.Join("", typeBytes.Select(b => b.ToString("X2")));
 			var type = Convert.ToInt32(typeStr, 16) switch
 			{
