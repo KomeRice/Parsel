@@ -210,7 +210,7 @@ namespace Parsel
 
 			var protocolRange = new ByteRange("Protocol",
 				ttlRange.GetRangeEnd(), ModelHelper.ByteShifter(ttlRange.GetRangeEnd(), data, 1),
-				protocolBytes, $"{protocol} ({ToHexRepresentation(protocolBytes)}/{protocolStr})");
+				protocolBytes, $"{ToHexRepresentation(protocolBytes)} ({protocol}/{protocolStr})");
 			ipv4.AddChild(protocolRange);
 
 			var headerChecksumRange = new ByteRange("Header checksum",
