@@ -55,6 +55,7 @@ namespace Parsel
 
 		private void FileClicked(object sender, EventArgs a)
 		{
+
 			var fc = new FileChooserDialog("Choisir fichier à ouvrir", this, 
 				FileChooserAction.Open, "Annuler", ResponseType.Cancel, "Ouvrir", ResponseType.Accept);
 
@@ -62,57 +63,79 @@ namespace Parsel
 			filter.AddPattern("*.txt");
 			fc.Filter = filter;
 
-			if (fc.Run() == (int) ResponseType.Accept)
+			try
 			{
-				// Read and format file
-				var f = File.ReadAllText(fc.Filename);
-				fc.Dispose();
-				var formattedFile = ParseUtils.Format(f);
-				_printTrace.Buffer.Text = string.Join("\n", formattedFile);
-				
-				// Split file into packets 
-				var packets = ParseUtils.ParseFile(formattedFile).ToList();
-				_byteRanges.AddRange(packets);
-				// Parse packets and add to tree
-				foreach(var packet in packets) {
-					var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "", packet.GetId());
+				if (fc.Run() == (int) ResponseType.Accept)
+				{
+					_displayTrace.Selection.UnselectAll();
+					_traceTree.Clear();
+					_traceBuffer.RemoveAllTags(_traceBuffer.StartIter, _traceBuffer.EndIter);
+					_traceBuffer.Clear();
 					
-					// Parse headers
-					
-					// Ethernet
-					var ethernet = ParseUtils.ParseEthernet(packet, _traceBuffer.Text);
-					packet.AddChild(ethernet);
-					ModelHelper.AddChildren(ethernet, _traceTree, root, _byteRanges);
+					_byteRanges.Clear();
 
-					var type = ethernet.GetChildren().Find(br => br.GetField() == "Type");
-					if (type == null) return;
-					if (!type.GetValue().Contains("IPv4")) return;
-					
-					// Ip
-					var ip = ParseUtils.ParseIp(packet, _traceBuffer.Text);
-					packet.AddChild(ip);
-					ModelHelper.AddChildren(ip, _traceTree, root, _byteRanges);
-					
-					var protocol = ip.GetChildren().Find(br => br.GetField() == "Protocol");
-					if (protocol == null) return;
-					if (!protocol.GetValue().Contains("TCP")) return;
 
-					var byteOffsetTcp = ip.GetByteList().Count + ethernet.GetByteList().Count;
-					var startIndexTcp = ip.GetRangeEnd();
-					
-					//Tcp
+					// Read and format file
+					var f = File.ReadAllText(fc.Filename);
+					fc.Dispose();
+					var formattedFile = ParseUtils.Format(f);
+					_printTrace.Buffer.Text = string.Join("\n", formattedFile);
 
-					var tcp = ParseUtils.ParseTcp(packet, _traceBuffer.Text, byteOffsetTcp, startIndexTcp);
-					packet.AddChild(tcp);
-					ModelHelper.AddChildren(tcp, _traceTree, root, _byteRanges);
+					// Split file into packets 
+					var packets = ParseUtils.ParseFile(formattedFile).ToList();
+					_byteRanges.AddRange(packets);
+					// Parse packets and add to tree
+					foreach (var packet in packets)
+					{
+						var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "",
+							packet.GetId());
 
+						// Parse headers
+
+						// Ethernet
+						var ethernet = ParseUtils.ParseEthernet(packet, _traceBuffer.Text);
+						packet.AddChild(ethernet);
+						ModelHelper.AddChildren(ethernet, _traceTree, root, _byteRanges);
+
+						var type = ethernet.GetChildren().Find(br => br.GetField() == "Type");
+						if (type == null) continue;
+						if (!type.GetValue().Contains("IPv4")) continue;
+
+						// Ip
+						var ip = ParseUtils.ParseIp(packet, _traceBuffer.Text);
+						packet.AddChild(ip);
+						ModelHelper.AddChildren(ip, _traceTree, root, _byteRanges);
+
+						var protocol = ip.GetChildren().Find(br => br.GetField() == "Protocol");
+						if (protocol == null) continue;
+						if (!protocol.GetValue().Contains("TCP")) continue;
+
+						var byteOffsetTcp = ip.GetByteList().Count + ethernet.GetByteList().Count;
+						var startIndexTcp = ip.GetRangeEnd();
+
+						// Tcp
+
+						var tcp = ParseUtils.ParseTcp(packet, _traceBuffer.Text, byteOffsetTcp, startIndexTcp);
+						packet.AddChild(tcp);
+						ModelHelper.AddChildren(tcp, _traceTree, root, _byteRanges);
+
+						// HTTP
+						
+					}
 				}
-
+				else
+				{
+					fc.Dispose();
+				}
+				_labelPrompt.Text = "Choisir un fichier (.txt) pour commencer.";
 			}
-			else
+			catch (Exception e)
 			{
-				fc.Dispose();
+				_labelPrompt.Text =
+					"Le fichier donné est invalide, corrompu ou contient des erreurs, essayez un autre fichier.";
+				Console.Error.WriteLine($"File contained error(s): {e.Message}");
 			}
+			
 		}
 
 		private void TreeOnCursorChanged(object sender, EventArgs e)
