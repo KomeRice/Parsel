@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Gtk;
 using Pango;
 using UI = Gtk.Builder.ObjectAttribute;
