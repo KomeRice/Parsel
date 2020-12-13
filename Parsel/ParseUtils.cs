@@ -4,9 +4,16 @@ using System.Linq;
 
 namespace Parsel
 {
-
+	/// <summary>
+	/// Contains methods for parsing files
+	/// </summary>
 	public static class ParseUtils
 	{
+		/// <summary>
+		/// Splits a formatted text file in packets based on offset
+		/// </summary>
+		/// <param name="fData">Formatted data using ParseUtils.Format()</param>
+		/// <returns>A list of ByteRanges representing packets</returns>
 		public static IEnumerable<ByteRange> ParseFile(IList<string> fData)
 		{
 			var parsedBytes = new List<ByteRange>();
@@ -39,6 +46,12 @@ namespace Parsel
 			return parsedBytes;
 		}
 
+		/// <summary>
+		/// Parses the Ethernet header of a ByteRange
+		/// </summary>
+		/// <param name="packet">ByteRange containing an Ethernet header</param>
+		/// <param name="data">Read data displayed on raw trace as a string</param>
+		/// <returns>Ethernet ByteRange</returns>
 		public static ByteRange ParseEthernet(ByteRange packet, string data)
 		{
 			// Destination MAC
@@ -81,6 +94,12 @@ namespace Parsel
 			
 		}
 
+		/// <summary>
+		/// Parses the IPv4 header of a ByteRange
+		/// </summary>
+		/// <param name="packet">ByteRange containing an IPv4 header</param>
+		/// <param name="data">Read data displayed on raw trace as a string</param>
+		/// <returns>IPv4 ByteRange</returns>
 		public static ByteRange ParseIp(ByteRange packet, string data)
 		{
 			// Version
@@ -430,6 +449,14 @@ namespace Parsel
 			return ipv4;
 		}
 
+		/// <summary>
+		/// Parses the TCP header of a ByteRange
+		/// </summary>
+		/// <param name="packet">ByteRange containing an TCP header</param>
+		/// <param name="data">Read data displayed on raw trace as a string</param>
+		/// <param name="offset">Byte offset on packet byte list, should be last byte of previous header</param>
+		/// <param name="startIndex">Cursor offset, should be GetRangeEnd of previous header</param>
+		/// <returns>IPv4 ByteRange</returns>
 		public static ByteRange ParseTcp(ByteRange packet, string data, int offset, int startIndex)
 		{
 			// Source Port
@@ -462,7 +489,6 @@ namespace Parsel
 			var frag = Convert.ToString(
 				Convert.ToInt32(flagsStr, 16), 2).PadLeft(16,'0');
 
-			var reserved = Convert.ToInt32(frag.Substring(4,3));
 			var nonce = Convert.ToInt32(frag.Substring(7,1));
 			var cwr = Convert.ToInt32(frag.Substring(8,1));
 			var ecnecho = Convert.ToInt32(frag.Substring(9,1));
@@ -517,9 +543,9 @@ namespace Parsel
 				flagBytes, $"0x{flagsStr}");
 			tcp.AddChild(flags);
 
-			var reservedFlagRange = new ByteRange($"000. .... ....",
+			var reservedFlagRange = new ByteRange("000. .... ....",
 				ackRange.GetRangeEnd(), ModelHelper.ByteShifter(ackRange.GetRangeEnd(), data, 2),
-				flagBytes, $"Reserved Bit: Not set");
+				flagBytes, "Reserved Bit: Not set");
 			flags.AddChild(reservedFlagRange);
 
 			var nonceRange = new ByteRange($"...{nonce} .... ....",
@@ -751,6 +777,14 @@ namespace Parsel
 			return tcp;
 		}
 
+		/// <summary>
+		/// Parses the HTTP header of a ByteRange
+		/// </summary>
+		/// <param name="packet">ByteRange containing an TCP header</param>
+		/// <param name="data">Read data displayed on raw trace as a string</param>
+		/// <param name="offset">Byte offset on packet byte list, should be last byte of previous header</param>
+		/// <param name="startIndex">Cursor offset, should be GetRangeEnd of previous header</param>
+		/// <returns>HTTP ByteRange</returns>
 		public static ByteRange ParseHttp(ByteRange packet, string data, int offset, int startIndex)
 		{
 			// Whitespace 0x20 = 32 as byte
@@ -765,16 +799,18 @@ namespace Parsel
 
 			var lines = new List<ByteRange>();
 			var currLine = "";
+			var processed = 0;
 
 			for (var i = 0; i < endIndex; i++)
 			{
 				if (i + 1 < endIndex && httpBytes[i] == 13 && httpBytes[i + 1] == 10)
 				{
-					var currLength = offset + i - currLine.Length;
-					lines.Add(new ByteRange("", ModelHelper.ByteShifter(startIndex, data, currLength),
-						ModelHelper.ByteShifter(startIndex, data, offset + i),
-						packet.GetByteList().GetRange(currLength, currLine.Length),
+					
+					lines.Add(new ByteRange("", ModelHelper.ByteShifter(startIndex, data, processed),
+						ModelHelper.ByteShifter(startIndex, data, processed + currLine.Length + 2),
+						packet.GetByteList().GetRange(processed, currLine.Length + 2),
 						currLine));
+					processed += currLine.Length + 2;
 					currLine = "";
 					i += 2;
 				}
@@ -782,8 +818,8 @@ namespace Parsel
 			}
 			
 			lines.Add(new ByteRange("", ModelHelper.ByteShifter(startIndex, data, endIndex - currLine.Length),
-				ModelHelper.ByteShifter(startIndex, data, endIndex + 4),
-				packet.GetByteList().GetRange(endIndex - currLine.Length, currLine.Length), currLine));
+				ModelHelper.ByteShifter(startIndex, data, endIndex + 2),
+				packet.GetByteList().GetRange(endIndex - currLine.Length, currLine.Length + 2), currLine));
 			
 			var http = new ByteRange("HTTP", startIndex, ModelHelper.ByteShifter(startIndex, data, endIndex + 4),
 				packet.GetByteList().GetRange(offset, endIndex + 4));
@@ -796,6 +832,14 @@ namespace Parsel
 			return http;
 		}
 
+		/// <summary>
+		/// Formats a text file into data according to offsets.
+		/// Empty lines and lines containing no hexadecimal characters or no bytes will be ignored.
+		/// Extraneous whitespaces are trimmed.
+		/// </summary>
+		/// <param name="data">Raw data to process</param>
+		/// <returns>Formatted data as a list of strings</returns>
+		/// <exception cref="FormatException">Thrown if a line had less bytes than expected by offset of next line</exception>
 		public static IList<string> Format(string data)
 		{
 			// Split text file into a list of lines
@@ -844,7 +888,6 @@ namespace Parsel
 					Console.WriteLine($"Part of file was ignored: {e}");
 				}
 			}
-
 			return formattedLines;
 		}
 
@@ -857,12 +900,25 @@ namespace Parsel
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(str, @"\A\b[0-9a-fA-F]+\b\Z") && str.Length == 2;
 		}
+		
+		/// <summary>
+		/// Converts a list of bytes into their hex representation
+		/// </summary>
+		/// <param name="bytes">List of bytes to convert</param>
+		/// <returns>Hex representation of given bytes</returns>
 		private static string ToHexRepresentation(List<byte> bytes)
 		{
 			return "0x" + string.Join("", bytes.Select(b => b.ToString("X2")));
 		}
-		
-		public static int SubListIndex<T>(this IList<T> list, int start, IList<T> sublist)
+
+		/// <summary>
+		/// Finds the index of a sublist in a list
+		/// </summary>
+		/// <param name="list">Searched list</param>
+		/// <param name="start">Index from which the search should start, 0 if all the list should be searched</param>
+		/// <param name="sublist">Sublist to find</param>
+		/// <returns>Index of first instance of sublist from given start index in a list</returns>
+		private static int SubListIndex<T>(this IList<T> list, int start, IList<T> sublist)
 		{
 			for (var listIndex = start; listIndex < list.Count - sublist.Count + 1; listIndex++)
 			{
