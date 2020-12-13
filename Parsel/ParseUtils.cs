@@ -756,7 +756,7 @@ namespace Parsel
 			// Whitespace 0x20 = 32 as byte
 			// Return \r\n 0x0d0a = 13 10 as bytes
 
-			var httpBytes = packet.GetByteList().GetRange(offset, packet.GetByteList().Count - offset);
+			var httpBytes = packet.GetByteList().GetRange(offset, packet.GetSize() - offset);
 
 			// This finds the end of the header
 			var endIndex = httpBytes.SubListIndex(0, new List<byte> {13, 10, 13, 10});

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Gtk;
 using Pango;
 using UI = Gtk.Builder.ObjectAttribute;
@@ -18,6 +19,7 @@ namespace Parsel
 	{
 		[UI] private Label _labelPrompt = null;
 		[UI] private Button _buttonPickFile = null;
+		[UI] private Button _buttonExport = null;
 		
 		[UI] private TextView _printTrace = null;
 		[UI] private TreeView _displayTrace = null;
@@ -25,6 +27,7 @@ namespace Parsel
 		[UI] private TreeStore _traceTree = null;
 
 		private static List<ByteRange> _byteRanges = new List<ByteRange>();
+		private static List<ByteRange> _rootRanges = new List<ByteRange>();
 
 		private static readonly TextTag Highlight = new TextTag("Highlight")
 		{
@@ -45,7 +48,10 @@ namespace Parsel
 
 			DeleteEvent += Window_DeleteEvent;
 			_buttonPickFile.Clicked += FileClicked;
+			_buttonExport.Clicked += ExportClicked;
 			_displayTrace.CursorChanged += TreeOnCursorChanged;
+			_buttonPickFile.TooltipText = "Doit être au format texte et correctement formaté";
+			_buttonExport.TooltipText = "Ouvrez un fichier avant de pouvoir exporter.";
 		}
 
 		private void Window_DeleteEvent(object sender, DeleteEventArgs a)
@@ -73,6 +79,7 @@ namespace Parsel
 					_traceBuffer.Clear();
 					
 					_byteRanges.Clear();
+					_rootRanges.Clear();
 
 
 					// Read and format file
@@ -87,8 +94,9 @@ namespace Parsel
 					// Parse packets and add to tree
 					foreach (var packet in packets)
 					{
-						var root = _traceTree.AppendValues(packet.GetField(), packet.GetByteList().Count, "",
+						var root = _traceTree.AppendValues(packet.GetField(), packet.GetSize(), "",
 							packet.GetId());
+						_rootRanges.Add(packet);
 
 						// Parse headers
 
@@ -127,20 +135,31 @@ namespace Parsel
 						packet.AddChild(http);
 						ModelHelper.AddChildren(http, _traceTree, root, _byteRanges);
 					}
+
+					_buttonExport.Sensitive = true;
+					_buttonExport.TooltipText = "Exporter au format JSON...";
+					
+					_labelPrompt.Text = "Choisir un fichier (.txt) pour commencer.";
 				}
 				else
 				{
 					fc.Dispose();
 				}
-				_labelPrompt.Text = "Choisir un fichier (.txt) pour commencer.";
 			}
 			catch (Exception e)
 			{
 				_labelPrompt.Text =
 					"Le fichier donné est invalide, corrompu ou contient des erreurs, essayez un autre fichier.";
 				Console.Error.WriteLine($"File contained error(s): {e.Message}");
+				_buttonExport.Sensitive = false;
 			}
 			
+		}
+
+		private void ExportClicked(object sender, EventArgs a)
+		{
+			var test = _byteRanges[0].ToJson();
+			var owo = 0;
 		}
 
 		private void TreeOnCursorChanged(object sender, EventArgs e)

@@ -1,27 +1,36 @@
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Parsel
 {
 	public class ByteRange
 	{
-		private static int Count = 0;
+		private static int _count = 0;
 		private readonly int _id;
+		[JsonProperty(PropertyName = "Field")]
 		private readonly string _fieldName;
+		[JsonProperty(PropertyName = "Value")]
 		private readonly string _value;
 		private readonly int _rangeStart, _rangeEnd;
 		private readonly List<byte> _byteList;
 		private ByteRange _parentHeader;
+		[JsonProperty(PropertyName = "Size")]
+		private int _size;
+		[JsonProperty(PropertyName = "Children")]
 		private List<ByteRange> _children = new List<ByteRange>();
+		
 
 		public ByteRange(string fieldName, int start, int end, List<byte> byteList,string value = "")
 		{
-			_id = Count;
-			++Count;
+			_id = _count;
+			++_count;
 			_fieldName = fieldName;
 			_rangeStart = start;
 			_rangeEnd = end;
 			_byteList = byteList;
 			_value = value;
+			_size = _byteList.Count;
 		}
 
 		public string GetValue()
@@ -53,6 +62,11 @@ namespace Parsel
 		{
 			return _children;
 		}
+		
+		public int GetSize()
+		{
+			return _size;
+		}
 
 		private void SetAsChildren(ByteRange parent)
 		{
@@ -68,6 +82,16 @@ namespace Parsel
 		public int GetId()
 		{
 			return _id;
+		}
+		
+		public bool ShouldSerialize_children()
+		{
+			return _children.Count > 0;
+		}
+
+		public string ToJson()
+		{
+			return JsonConvert.SerializeObject(this, Formatting.Indented);
 		}
 	}
 }
