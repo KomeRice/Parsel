@@ -150,6 +150,7 @@ namespace Parsel
 				_labelPrompt.Text =
 					"Le fichier donné est invalide, corrompu ou contient des erreurs, essayez un autre fichier.";
 				Console.Error.WriteLine($"File contained error(s): {e.Message}");
+				_buttonExport.TooltipText = "Le fichier doit être valide avant de pouvoir exporter";
 				_buttonExport.Sensitive = false;
 			}
 			
@@ -157,8 +158,38 @@ namespace Parsel
 
 		private void ExportClicked(object sender, EventArgs a)
 		{
-			var test = _byteRanges[0].ToJson();
-			var owo = 0;
+			var fc = new FileChooserDialog("Enregistrer sous...", this,
+				FileChooserAction.Save, "Annuler", ResponseType.Cancel, "Enregistrer", ResponseType.Accept);
+			
+			var filter = new FileFilter {Name = "Fichiers JSON"};
+			filter.AddPattern("*.json");
+			fc.Filter = filter;
+			
+			try
+			{
+				if (fc.Run() != (int) ResponseType.Accept)
+				{
+					fc.Dispose();
+					return;
+				}
+				
+				var path = fc.Filename.EndsWith(".json") ? fc.Filename : fc.Filename + ".json";
+				fc.Dispose();
+				
+				var json = _rootRanges.Aggregate("", (current, packet) => current + packet.ToJson());
+				File.WriteAllText(path, json);
+
+				var messageDialog = new MessageDialog(this, DialogFlags.DestroyWithParent, MessageType.Info,
+					ButtonsType.Ok, "Fichier enregistré") {Title = "Info"};
+				messageDialog.Run();
+				messageDialog.Dispose();
+			}
+			catch (Exception e)
+			{
+				var messageDialog = new MessageDialog(this, DialogFlags.DestroyWithParent, MessageType.Error,
+					ButtonsType.Ok, $"Une erreur est survenue: {e.Message}") {Title = "Erreur"};
+				Console.Error.WriteLine(e);
+			}
 		}
 
 		private void TreeOnCursorChanged(object sender, EventArgs e)

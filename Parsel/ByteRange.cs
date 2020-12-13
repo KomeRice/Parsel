@@ -84,6 +84,16 @@ namespace Parsel
 			return _id;
 		}
 		
+		public bool ShouldSerialize_fieldName()
+		{
+			return _fieldName.Length > 0;
+		}
+
+		public bool ShouldSerialize_value()
+		{
+			return _value.Length > 0;
+		}
+
 		public bool ShouldSerialize_children()
 		{
 			return _children.Count > 0;
