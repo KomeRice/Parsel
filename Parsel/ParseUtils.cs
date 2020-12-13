@@ -751,6 +751,51 @@ namespace Parsel
 			return tcp;
 		}
 
+		public static ByteRange ParseHttp(ByteRange packet, string data, int offset, int startIndex)
+		{
+			// Whitespace 0x20 = 32 as byte
+			// Return \r\n 0x0d0a = 13 10 as bytes
+
+			var httpBytes = packet.GetByteList().GetRange(offset, packet.GetByteList().Count - offset);
+
+			// This finds the end of the header
+			var endIndex = httpBytes.SubListIndex(0, new List<byte> {13, 10, 13, 10});
+			
+			if(endIndex == -1) return null;
+
+			var lines = new List<ByteRange>();
+			var currLine = "";
+
+			for (var i = 0; i < endIndex; i++)
+			{
+				if (i + 1 < endIndex && httpBytes[i] == 13 && httpBytes[i + 1] == 10)
+				{
+					var currLength = offset + i - currLine.Length;
+					lines.Add(new ByteRange("", ModelHelper.ByteShifter(startIndex, data, currLength),
+						ModelHelper.ByteShifter(startIndex, data, offset + i),
+						packet.GetByteList().GetRange(currLength, currLine.Length),
+						currLine));
+					currLine = "";
+					i += 2;
+				}
+				currLine += (char) httpBytes[i];
+			}
+			
+			lines.Add(new ByteRange("", ModelHelper.ByteShifter(startIndex, data, endIndex - currLine.Length),
+				ModelHelper.ByteShifter(startIndex, data, endIndex + 4),
+				packet.GetByteList().GetRange(endIndex - currLine.Length, currLine.Length), currLine));
+			
+			var http = new ByteRange("HTTP", startIndex, ModelHelper.ByteShifter(startIndex, data, endIndex + 4),
+				packet.GetByteList().GetRange(offset, endIndex + 4));
+
+			foreach (var br in lines)
+			{
+				http.AddChild(br);
+			}
+			
+			return http;
+		}
+
 		public static IList<string> Format(string data)
 		{
 			// Split text file into a list of lines
@@ -815,6 +860,19 @@ namespace Parsel
 		private static string ToHexRepresentation(List<byte> bytes)
 		{
 			return "0x" + string.Join("", bytes.Select(b => b.ToString("X2")));
+		}
+		
+		public static int SubListIndex<T>(this IList<T> list, int start, IList<T> sublist)
+		{
+			for (var listIndex = start; listIndex < list.Count - sublist.Count + 1; listIndex++)
+			{
+				var count = 0;
+				while (count < sublist.Count && sublist[count].Equals(list[listIndex + count]))
+					count++;
+				if (count == sublist.Count)
+					return listIndex;
+			}
+			return -1;
 		}
 	}
 }

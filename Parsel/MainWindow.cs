@@ -120,7 +120,12 @@ namespace Parsel
 						ModelHelper.AddChildren(tcp, _traceTree, root, _byteRanges);
 
 						// HTTP
-						
+						var byteOffsetHttp = tcp.GetByteList().Count + byteOffsetTcp;
+						var startIndexHttp = tcp.GetRangeEnd();
+						var http = ParseUtils.ParseHttp(packet, _traceBuffer.Text, byteOffsetHttp, startIndexHttp);
+						if (http == null) continue;
+						packet.AddChild(http);
+						ModelHelper.AddChildren(http, _traceTree, root, _byteRanges);
 					}
 				}
 				else
