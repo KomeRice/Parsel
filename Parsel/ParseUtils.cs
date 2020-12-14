@@ -10,11 +10,11 @@ namespace Parsel
 	public static class ParseUtils
 	{
 		/// <summary>
-		/// Splits a formatted text file in packets based on offset
+		/// Splits a formatted text in packets based on offset
 		/// </summary>
 		/// <param name="fData">Formatted data using ParseUtils.Format()</param>
 		/// <returns>A list of ByteRanges representing packets</returns>
-		public static IEnumerable<ByteRange> ParseFile(IList<string> fData)
+		public static IEnumerable<ByteRange> ParseText(IList<string> fData)
 		{
 			var parsedBytes = new List<ByteRange>();
 

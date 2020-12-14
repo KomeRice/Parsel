@@ -27,15 +27,15 @@
         <property name="can-focus">False</property>
         <child>
           <object class="GtkButton" id="_buttonPickFile">
-            <property name="label" translatable="yes">Parcourir...</property>
-            <property name="width-request">100</property>
+            <property name="label" translatable="yes">Importer Fichier</property>
+            <property name="width-request">130</property>
             <property name="height-request">40</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">760</property>
+            <property name="x">570</property>
             <property name="y">540</property>
           </packing>
         </child>
@@ -119,7 +119,7 @@
         </child>
         <child>
           <object class="GtkLabel" id="_labelPrompt">
-            <property name="width-request">700</property>
+            <property name="width-request">545</property>
             <property name="height-request">35</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -128,7 +128,7 @@
             <property name="xalign">1</property>
           </object>
           <packing>
-            <property name="x">50</property>
+            <property name="x">20</property>
             <property name="y">543</property>
           </packing>
         </child>
@@ -186,8 +186,8 @@
         </child>
         <child>
           <object class="GtkButton" id="_buttonExport">
-            <property name="label" translatable="yes">Exporter</property>
-            <property name="width-request">100</property>
+            <property name="label" translatable="yes">Exporter Résultats</property>
+            <property name="width-request">130</property>
             <property name="height-request">40</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
@@ -195,7 +195,21 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">880</property>
+            <property name="x">850</property>
+            <property name="y">540</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="_buttonImport">
+            <property name="label" translatable="yes">Importer Texte</property>
+            <property name="width-request">130</property>
+            <property name="height-request">40</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">710</property>
             <property name="y">540</property>
           </packing>
         </child>
