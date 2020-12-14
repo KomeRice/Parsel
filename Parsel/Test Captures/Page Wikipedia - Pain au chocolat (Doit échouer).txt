@@ -1,0 +1,60 @@
+{{refimprove|date=June 2017}}
+{{Infobox prepared food
+| name             = Chocolatine
+| image            = File:Pain au chocolat Luc Viatour.jpg
+| caption          = Pain au chocolate
+| image_alt       = Pain au chocolate
+| alternate_name   = Chocolate bread, couque au chocolat, pain au chocolat
+| country          = [[France]]
+| region           = 
+| creator          = 
+| course           = 
+| type             = [[Viennoiserie]] [[sweet roll]]
+| served           = Hot or Cold
+| main_ingredient  = [[Baker's yeast|Yeast]]-leavened [[dough]], [[chocolate]]<ref>{{cite web|last1=Torres|first1=Jacques|title=Croissants, Pain au Chocolat, Pain Raisin and Danish|url=http://www.foodnetwork.com/recipes/croissants-pain-au-chocolat-pain-raisin-and-danish-recipe-1953285|publisher=[[Food Network]]|accessdate=16 June 2017}}</ref>
+| variations       =
+| calories         = 
+| other            = 
+}}
+'''Pain au chocolat''' ({{IPA-fr|pɛ̃ o ʃɔkɔla|-|Fr-pain au chocolat.ogg}}, literally "chocolate bread"), also known as '''chocolatine''' ({{IPA-fr|ʃɔkɔlatin|pron|Fr-Paris--chocolatine.ogg}}) in the south-west part of France and in [[Quebec]], is a type of [[viennoiserie]] [[sweet roll]] consisting of a [[cuboid]]-shaped piece of [[Baker's yeast|yeast]]-[[Leaven|leavened]] [[laminated dough]], similar in texture to a [[puff pastry]], with one or two pieces of [[dark chocolate]] in the centre...
+
+Pain au chocolat is made of the same layered doughs as a [[croissant]]. Often sold still hot or warm from the oven, they are commonly sold alongside [[croissants]] in [[Pâtisserie|French bakeries]] and [[Supermarket|supermarkets]].
+
+==Name==
+In [[France]], the name of the pain au chocolat varies by region:
+
+*In the [[Hauts-de-France]] and in [[Alsace]], the words {{lang|fr|petit pain au chocolat}} or {{lang|fr|petit pain}} are used.
+*In central France, in southern France and in Paris, {{lang|it|pain au chocolat}} is used.
+*In southwestern France ([[Nouvelle-Aquitaine]], [[Occitanie]]) and in [[Quebec]], the word {{lang|fr|chocolatine}} is used.
+
+In [[Belgium]], the words {{lang|fr|couque au chocolat}} are also used.
+
+They are often sold in packages at supermarkets and convenience stores, or made fresh in pastry shops. 
+
+* In [[Morocco]], [[Lebanon]], [[Tunisia]], [[Algeria]], the [[Netherlands]], [[Belgium]], [[Norway]], [[Republic of Ireland|Ireland]], [[Denmark]] and the [[United Kingdom]], they are sold in most bakeries, supermarkets and cafés.
+* In [[Germany]], they are sold less frequently than chocolate croissants, but both are referred to as {{lang|de|Schokoladencroissant}}.
+* In the [[United States]] and often [[English Canada]], they are commonly known as "chocolate croissants".<ref>[http://onefoodguy.blogspot.com/2009/09/tuesdays-tasting-trader-joes-chocolate.html Tuesday's Tasting - Trader Joe's Chocolate Croissants]</ref>
+* In [[Belgium]]'s [[Flanders]] region, they are sold in most bakeries, and referred to as {{lang|nl|chocoladekoek}} or {{lang|nl|chocoladebroodje}}. 
+* In [[Portugal]] and [[Spain]], they are sold in bakeries and supermarkets, as {{lang|es|napolitanas}} (i.e., "[[Naples|Neapolitans]]").
+* In [[Mexico]], they are also most commonly found in bakeries and supermarkets, and are known as ''chocolatines''.
+* In [[El Salvador]] and [[Brazil]], they are referred to {{lang|pt|croissant de chocolate}}.
+* In [[Australia]] and [[New Zealand]], they are commonly referred to as "chocolate croissants", and are sold freshly baked in most bakeries and supermarkets.
+
+==Origins and history==
+Legend has it that [[Marie-Antoinette d'Autriche|Marie-Antoinette]] introduced the croissant to France, but croissants and pains au chocolat are a relatively modern invention.<ref>{{cite web|url=http://www.1-800-bakery.com/newsdesk/History_of_the_Croissant.html|title=History of the Croissant|date=16 April 2013|website=1-800-Bakery.com|accessdate=16 June 2017}}</ref> The word croissant,  which refers to a plain form of pain au chocolat shaped like a half-moon or "crescent", made its entry in the French dictionary in 1863.<ref>{{cite web|url=http://blog.doctissimo.fr/debrouillandise/histoire-702096/viennent-sacrosaints-croissants-23492041.html|title=D'ou viennent les sacrosaints Croissants et Pains au Chocolat?|publisher=Club Doctissimo|language=French|accessdate=16 June 2017}}</ref> The type of pastry, called ''[[viennoiserie]]'' in French, was introduced in the early 19th century, when August Zang, an [[Austria]]n officer, and Ernest Schwarzer, an Austrian aristocrat, founded a [[Vienna|Viennese]] bakery in Paris located at 92, [[rue de Richelieu]].
+
+Originally, croissants and pains au chocolat were made from a [[brioche]] base but later evolved to incorporate a buttery flaky dough (''[[pâte feuilletée]]'').
+
+==See also==
+{{portal|Food|France}}
+* [[List of desserts]]
+
+==References==
+{{reflist}}
+
+{{Chocolate desserts}}
+{{Pastries}}
+
+[[Category:Chocolate desserts]]
+[[Category:French pastries]]
+[[Category:Occitan desserts]]
