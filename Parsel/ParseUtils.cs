@@ -516,7 +516,7 @@ namespace Parsel
 			var cursor = ModelHelper.CursorSetter(startIndex, data);
 			
 			var tcp = new ByteRange("TCP", cursor, ModelHelper.ByteShifter(cursor, data, headerLength), 
-				packet.GetByteList().GetRange(startIndex,headerLength), $"Src Port: {srcPort} Dst Port: {dstPort}, Seq: {seq}, Ack: {ack}");
+				packet.GetByteList().GetRange(offset,headerLength), $"Src Port: {srcPort} Dst Port: {dstPort}, Seq: {seq}, Ack: {ack}");
 			
 			var srcPortRange = new ByteRange("Source Port", cursor, ModelHelper.ByteShifter(cursor, data, 2), 
 				srcPortBytes, srcPort.ToString());
