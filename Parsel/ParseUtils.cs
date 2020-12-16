@@ -469,11 +469,11 @@ namespace Parsel
 
 			// Sequence Number
 			var seqBytes = packet.GetByteList().GetRange(offset + 4, 4);
-			var seq = Convert.ToInt32(string.Join("", seqBytes.Select(b => b.ToString("X2"))), 16);
+			var seq = Convert.ToInt64(string.Join("", seqBytes.Select(b => b.ToString("X2"))), 16);
 			
 			// Acknowledgement Number
 			var ackBytes = packet.GetByteList().GetRange(offset + 8, 4);
-			var ack = Convert.ToInt32(string.Join("", ackBytes.Select(b => b.ToString("X2"))), 16);
+			var ack = Convert.ToInt64(string.Join("", ackBytes.Select(b => b.ToString("X2"))), 16);
 			
 			var firstByteAsList = new List<byte>() {packet.GetByteList()[offset + 12]};
 			var first = packet.GetByteList()[offset + 12].ToString("X2");
