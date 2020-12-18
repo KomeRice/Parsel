@@ -34,6 +34,8 @@ namespace Parsel
 			Foreground = "white",
 			Weight = Weight.Bold
 		};
+		
+		private static List<string> _errors = new List<string>();
 
 		[UI] private Button _buttonExport = null;
 		[UI] private Button _buttonImport = null;
@@ -86,7 +88,7 @@ namespace Parsel
 			_byteRanges.Clear();
 			_rootRanges.Clear();
 			_buttonExport.Sensitive = true;
-			
+
 			_printTrace.Buffer.Text = string.Join("\n", formatted);
 
 			// Split file into packets 
@@ -157,11 +159,22 @@ namespace Parsel
 					
 			_buttonExport.TooltipText = "Exporter au format JSON...";
 					
-			_labelPrompt.Text = "Analyser une autre trace...";
+			
+			if (_errors.Count != 0)
+			{
+				_labelPrompt.Text = "Le fichier donné contient potentiellement des erreurs. (Survoler pour en savoir plus)";
+				_labelPrompt.TooltipText = string.Join("\n", _errors);
+			}
+			else
+			{
+				_labelPrompt.Text = "Analyser une autre trace...";
+				_labelPrompt.TooltipText = "Fichier analysé correctement";
+			}
 		}
 
 		private void FileClicked(object sender, EventArgs a)
 		{
+			_errors.Clear();
 			// Open File picker
 			var fc = new FileChooserDialog("Choisir fichier à ouvrir", this, 
 				FileChooserAction.Open, "Annuler", ResponseType.Cancel, "Ouvrir", ResponseType.Accept);
@@ -188,14 +201,17 @@ namespace Parsel
 			catch (Exception e)
 			{
 				_labelPrompt.Text =
-					"Le fichier donné est invalide, corrompu ou contient des erreurs, la lecture peut contenir des erreurs.";
+					"Le fichier donné contient potentiellement des erreurs. (Survoler pour en savoir plus)";
 				Console.Error.WriteLine($"File contained error(s): {e.Message}");
+				_labelPrompt.TooltipText = string.Join("\n", _errors);
+				_labelPrompt.TooltipText += e.Message;
 				_buttonExport.TooltipText = "La lecture contient potentiellement des erreurs";
 			}
 		}
 
 		private void ImportClicked(object sender, EventArgs a)
 		{
+			_errors.Clear();
 			var impWin = new ImportDialog();
 			try
 			{
@@ -213,7 +229,9 @@ namespace Parsel
 			{
 				impWin.Dispose();
 				_labelPrompt.Text =
-					"Le texte donné est invalide, corrompu ou contient des erreurs, la lecture peut contenir des erreurs.";
+					"Le texte donné contient potentiellement des erreurs. (Survoler pour en savoir plus)";
+				_labelPrompt.TooltipText = string.Join("\n", _errors);
+				_labelPrompt.TooltipText += e.Message;
 				Console.Error.WriteLine($"Text contained error(s): {e.Message}");
 				_buttonExport.TooltipText = "La lecture contient potentiellement des erreurs";
 			}
@@ -273,6 +291,11 @@ namespace Parsel
 			if (selectedItem != null)
 				ModelHelper.ByteHighlighter(selectedItem.GetRangeStart(), selectedItem.GetByteList().Count, Highlight,
 					_traceBuffer);
+		}
+
+		public static void LogError(string str)
+		{
+			_errors.Add(str);
 		}
 	}
 }

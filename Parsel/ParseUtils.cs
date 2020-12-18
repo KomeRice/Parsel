@@ -665,7 +665,7 @@ namespace Parsel
 						
 						var mssRange = new ByteRange("Maximum Segment Size", rangeStart, lastIndex, 
 							packet.GetByteList().GetRange(optionStart, mssLength),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 2, mssLength)));
+							ToHexRepresentation(packet.GetByteList().GetRange(optionStart, mssLength)));
 						var mssTypeRange = new ByteRange("Type", rangeStart,
 							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte,
 							$"{ToHexRepresentation(optionTypeByte)} ({optionType})");
@@ -688,7 +688,7 @@ namespace Parsel
 						
 						var wsOptRange = new ByteRange("Windows Scale WSopt", rangeStart, lastIndex, 
 							packet.GetByteList().GetRange(optionStart, wsOptLength),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 2, wsOptLength)));
+							ToHexRepresentation(packet.GetByteList().GetRange(optionStart, wsOptLength)));
 						var wsOptTypeRange = new ByteRange("Type", rangeStart,
 							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte,
 							$"{ToHexRepresentation(optionTypeByte)} ({optionType})");
@@ -713,7 +713,7 @@ namespace Parsel
 						
 						var tsRange = new ByteRange("Time Stamp Option", rangeStart, lastIndex, 
 							packet.GetByteList().GetRange(optionStart, tsLength),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 2, tsLength)));
+							ToHexRepresentation(packet.GetByteList().GetRange(optionStart, tsLength)));
 						var tsTypeRange = new ByteRange("Type", rangeStart,
 							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte,
 							$"{ToHexRepresentation(optionTypeByte)} ({optionType})");
@@ -722,14 +722,18 @@ namespace Parsel
 							packet.GetByteList().GetRange(optionStart + 1, 1),
 							$"{ToHexRepresentation(tsBytes.GetRange(0,1))} ({tsLength} bytes)");
 						
+						var tsvBytes = packet.GetByteList().GetRange(optionStart + 2, 4);
 						var tsvRange = new ByteRange("Time Stamp Value", tsLengthRange.GetRangeEnd(),
 							ModelHelper.ByteShifter(tsLengthRange.GetRangeEnd(), data, 4), 
 							packet.GetByteList().GetRange(optionStart + 2, 4),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 2, 4)));
+							$"{ToHexRepresentation(tsvBytes)} " + 
+							$"({Convert.ToInt64(string.Join("", tsvBytes.Select(b => b.ToString("X2"))), 16)})");
+						var tervBytes = packet.GetByteList().GetRange(optionStart + 6, 4);
 						var tervRange = new ByteRange("Time Echo Reply Value", tsvRange.GetRangeEnd(),
 							ModelHelper.ByteShifter(tsvRange.GetRangeEnd(), data, 4), 
 							packet.GetByteList().GetRange(optionStart + 6, 4),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 6, 4)));
+							$"{ToHexRepresentation(tervBytes)} " +
+							$"({Convert.ToInt64(string.Join("", tervBytes.Select(b => b.ToString("X2"))), 16)})");
 						
 						tsRange.AddChild(tsTypeRange);
 						tsRange.AddChild(tsLengthRange);
@@ -749,7 +753,7 @@ namespace Parsel
 						
 						var optRange = new ByteRange("Untreated Option", rangeStart, lastIndex, 
 							packet.GetByteList().GetRange(optionStart, optLength),
-							ToHexRepresentation(packet.GetByteList().GetRange(optionStart + 2, optLength)));
+							ToHexRepresentation(packet.GetByteList().GetRange(optionStart, optLength)));
 						var optTypeRange = new ByteRange("Type", rangeStart,
 							ModelHelper.ByteShifter(rangeStart, data, 1), optionTypeByte,
 							$"{ToHexRepresentation(optionTypeByte)} ({optionType})");
@@ -767,6 +771,8 @@ namespace Parsel
 						break;
 				}
 			}
+			
+			tcp.AddChild(optionsRange);
 
 			if (headerLength != treatedBytes + treatedOptionBytes)
 			{
@@ -885,7 +891,8 @@ namespace Parsel
 				catch (Exception e)
 				{
 					// Line is not formatted as part of trace, ignoring...
-					Console.WriteLine($"Part of file was ignored: {e}");
+					Console.WriteLine($"Part of file was ignored (Line {i}): {e}");
+					MainWindow.LogError($"Part of file was ignored (Line {i}): {e}");
 				}
 			}
 			return formattedLines;
